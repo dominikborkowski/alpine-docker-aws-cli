@@ -1,2 +1,2 @@
 #!/bin/sh
-docker buildx build --load -t dominikborkowski/alpine-docker-aws-cli --builder=container .
+docker buildx build --local --platform linux/amd64,linux/arm64 -t dominikborkowski/alpine-docker-aws-cli .
