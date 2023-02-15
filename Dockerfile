@@ -33,7 +33,7 @@ COPY --from=aws_cli_builder /aws-cli-bin/ /usr/local/bin/
 RUN apk --no-cache --upgrade --virtual=build_environment add \
     gcc python3-dev py3-pip musl-dev libffi-dev openssl-dev && \
     apk --no-cache --upgrade --virtual=random_tools add \
-    bash curl git python3 rsync && \
+    bash curl git jq python3 rsync && \
     pip3 --no-cache-dir install --upgrade aws-sam-cli && \
     apk --no-cache del build_environment && \
     rm -rf /var/cache/apk/* && \
