@@ -23,11 +23,25 @@ RUN rm -rf \
 RUN find /usr/local/aws-cli/v2/current/dist/awscli/data -name completions-1*.json -delete
 RUN find /usr/local/aws-cli/v2/current/dist/awscli/botocore/data -name examples-1.json -delete
 
+FROM alpine:${ALPINE_VERSION} as manifest_tool_builder
+ARG MANIFEST_TOOL_VERSION=2.0.6
+ARG TARGETPLATFORM
+# RUN touch $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' )
+# RUN export TARGET_ARCHITECTURE=$(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' )
+# RUN touch $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' ) && install -m 755 $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' ) /usr/local/bin/stuff
+# RUN touch $TARGET_ARCHITECTURE && install -m 755 $TARGET_ARCHITECTURE /usr/local/bin/stuff
+RUN apk add --no-cache wget
+RUN wget https://github.com/estesp/manifest-tool/releases/download/v${MANIFEST_TOOL_VERSION}/binaries-manifest-tool-${MANIFEST_TOOL_VERSION}.tar.gz
+RUN tar xvf  \
+    binaries-manifest-tool-${MANIFEST_TOOL_VERSION}.tar.gz manifest-tool-linux-$(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' )
+RUN install -m 755 manifest-tool-linux-$(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' ) /usr/local/bin/manifest-tool
+
 # Build the final image using docker image as the starting point, then copy in aws-cli
 FROM docker:${DOCKER_VERSION}
 LABEL maintainer "Dominik L. Borkowski"
 COPY --from=aws_cli_builder /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=aws_cli_builder /aws-cli-bin/ /usr/local/bin/
+COPY --from=manifest_tool_builder /usr/local/bin/manifest-tool /usr/local/bin/
 
 # Install few essential tools and AWS SAM CLI, then clean up
 RUN apk --no-cache --upgrade --virtual=build_environment add \
