@@ -1,6 +1,5 @@
 ARG ALPINE_VERSION=3.17
-ARG DOCKER_VERSION=20
-# ARG DOCKER_VERSION=23
+ARG DOCKER_VERSION=23
 
 # Build AWS CLI v2
 FROM python:3.10-alpine${ALPINE_VERSION} as aws_cli_builder
@@ -23,13 +22,10 @@ RUN rm -rf \
 RUN find /usr/local/aws-cli/v2/current/dist/awscli/data -name completions-1*.json -delete
 RUN find /usr/local/aws-cli/v2/current/dist/awscli/botocore/data -name examples-1.json -delete
 
+# Fetch latest binary builts of manifest-tool, and unpack one specific to the platform for this image
 FROM alpine:${ALPINE_VERSION} as manifest_tool_builder
 ARG MANIFEST_TOOL_VERSION=2.0.6
 ARG TARGETPLATFORM
-# RUN touch $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' )
-# RUN export TARGET_ARCHITECTURE=$(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' )
-# RUN touch $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' ) && install -m 755 $(echo $TARGETPLATFORM | awk -F '/' '{print $NF}' ) /usr/local/bin/stuff
-# RUN touch $TARGET_ARCHITECTURE && install -m 755 $TARGET_ARCHITECTURE /usr/local/bin/stuff
 RUN apk add --no-cache wget
 RUN wget https://github.com/estesp/manifest-tool/releases/download/v${MANIFEST_TOOL_VERSION}/binaries-manifest-tool-${MANIFEST_TOOL_VERSION}.tar.gz
 RUN tar xvf  \
@@ -43,7 +39,7 @@ COPY --from=aws_cli_builder /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=aws_cli_builder /aws-cli-bin/ /usr/local/bin/
 COPY --from=manifest_tool_builder /usr/local/bin/manifest-tool /usr/local/bin/
 
-# Install few essential tools and AWS SAM CLI, then clean up
+# Install few essential tools and AWS SAM CLI, then clean up, while trying to keep number of layers down to a minimum
 RUN apk --no-cache --upgrade --virtual=build_environment add \
     gcc python3-dev py3-pip musl-dev libffi-dev openssl-dev && \
     apk --no-cache --upgrade --virtual=random_tools add \
